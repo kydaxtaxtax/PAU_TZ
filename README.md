@@ -13,7 +13,7 @@
    cd project
    ```
 
-2. Создайте файл `.env` в корне папки `project` и добавьте в него ваши учетные данные:
+2. Создайте файл `.env` в корне проекта и добавьте в него учетные данные:
    ```env
    LLM_API_URL=https://api.hyperfusion.io/v1/chat/completions
    LLM_API_KEY=ваш_api_ключ
