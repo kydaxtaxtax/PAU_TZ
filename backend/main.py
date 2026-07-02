@@ -4,6 +4,7 @@ import httpx
 import os
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+from collections import defaultdict
 
 load_dotenv()
 
@@ -19,8 +20,13 @@ app.add_middleware(
 LLM_API_URL = os.getenv("LLM_API_URL")
 LLM_API_KEY = os.getenv("LLM_API_KEY")
 
+# In-memory storage for conversation history
+# Format: {session_id: [messages]}
+conversations = defaultdict(list)
+
 class UserResponse(BaseModel):
     text: str
+    session_id: str = "default"
 
 @app.get("/health")
 async def health():
@@ -33,12 +39,16 @@ async def ask_llm(user_input: UserResponse):
         "Если ответ подробный — поблагодари и заверши."
     )
     
+    # Initialize history with system prompt if it's a new session
+    if not conversations[user_input.session_id]:
+        conversations[user_input.session_id].append({"role": "system", "content": system_prompt})
+    
+    # Add user message to history
+    conversations[user_input.session_id].append({"role": "user", "content": user_input.text})
+    
     payload = {
         "model": "openai/gpt-oss-120b", 
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_input.text}
-        ]
+        "messages": conversations[user_input.session_id]
     }
     headers = {
         "Authorization": f"Bearer {LLM_API_KEY.strip()}",
@@ -47,12 +57,14 @@ async def ask_llm(user_input: UserResponse):
 
     async with httpx.AsyncClient() as client:
         try:
-            print(f"Sending request to {LLM_API_URL} with key {LLM_API_KEY[:10]}...")
             response = await client.post(LLM_API_URL, json=payload, headers=headers, timeout=30.0)
-            print(f"Response status: {response.status_code}")
             response.raise_for_status()
             data = response.json()
-            return {"reply": data["choices"][0]["message"]["content"]}
+            reply = data["choices"][0]["message"]["content"]
+            
+            # Add assistant reply to history
+            conversations[user_input.session_id].append({"role": "assistant", "content": reply})
+            
+            return {"reply": reply}
         except Exception as e:
-            print(f"Error: {str(e)}")
             raise HTTPException(status_code=500, detail=str(e))
