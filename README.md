@@ -13,7 +13,13 @@
    cd project
    ```
 
-2. Запустите приложение в фоновом режиме:
+2. Создайте файл `.env` в корне папки `project` и добавьте в него ваши учетные данные:
+   ```env
+   LLM_API_URL=https://api.hyperfusion.io/v1/chat/completions
+   LLM_API_KEY=ваш_api_ключ
+   ```
+
+3. Запустите приложение в фоновом режиме:
    ```bash
    docker compose up -d --build
    ```
