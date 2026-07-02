@@ -25,6 +25,9 @@
         const sendBtn = document.getElementById('sendBtn');
         const userInput = document.getElementById('userInput');
         const responseDiv = document.getElementById('response');
+        
+        // Simple session ID to maintain context in memory
+        const sessionId = 'session_' + Math.random().toString(36).substr(2, 9);
 
         sendBtn.onclick = async () => {
             const text = userInput.value.trim();
@@ -37,10 +40,11 @@
                 const res = await fetch('/api/ask', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text })
+                    body: JSON.stringify({ text, session_id: sessionId })
                 });
                 const data = await res.json();
                 responseDiv.textContent = data.reply || data.detail || 'Ошибка';
+                userInput.value = '';
             } catch (e) {
                 responseDiv.textContent = 'Ошибка сети';
             } finally {
